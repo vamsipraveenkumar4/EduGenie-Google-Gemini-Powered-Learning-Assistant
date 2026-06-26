@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduGenie – AI Learning Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1>EduGenie ✨</h1>
+                <div class="lang-selector">
+                    <label for="language">Language:</label>
+                    <select id="language">
+                        <option value="English">English</option>
+                        <option value="Hindi">Hindi (हिन्दी)</option>
+                        <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+                    </select>
+                </div>
+            </div>
+            <p>Your Google Gemini Powered Learning Assistant</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" id="tab-ask" onclick="switchTab('ask')">Ask Anything</button>
+            <button class="tab-btn" id="tab-quiz" onclick="switchTab('quiz')">Generate Quiz</button>
+            <button class="tab-btn" id="tab-summary" onclick="switchTab('summary')">Summarize Content</button>
+        </nav>
+
+        <!-- Ask Section -->
+        <section id="ask-section" class="content-section active">
+            <div class="input-group">
+                <label for="question" id="lbl-ask-q">What do you want to learn today?</label>
+                <textarea id="question" rows="4"
+                    placeholder="e.g. Explain photosynthesis in simple terms..."></textarea>
+            </div>
+            <button class="action-btn" id="ask-btn" onclick="handleAsk()">
+                <div class="btn-content">
+                    <span id="ask-text">Ask Genie</span>
+                    <div id="ask-spinner" class="spinner"></div>
+                </div>
+            </button>
+            <div id="ask-result" class="result-card" style="display: none;"></div>
+        </section>
+
+        <!-- Quiz Section -->
+        <section id="quiz-section" class="content-section">
+            <div class="mode-toggle">
+                <button class="toggle-btn active" id="quiz-text-mode" onclick="setMode('quiz', 'text')">Topic</button>
+                <button class="toggle-btn" id="quiz-file-mode" onclick="setMode('quiz', 'file')">Upload File</button>
+            </div>
+
+            <div class="input-group" id="quiz-text-input">
+                <label for="quiz-topic" id="lbl-quiz-topic">Enter a Topic for the Quiz</label>
+                <input type="text" id="quiz-topic" placeholder="e.g. Quantum Physics, French Revolution...">
+            </div>
+
+            <div class="input-group" id="quiz-file-input" style="display: none;">
+                <label for="quiz-file" id="lbl-quiz-file">Upload PDF, DOCX, PPTX, or Image</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="quiz-file" accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg">
+                    <p class="file-hint" id="hint-quiz-file">Max 5MB • PDF, Word, PowerPoint, Images</p>
+                </div>
+            </div>
+
+            <button class="action-btn" id="quiz-btn" onclick="handleQuiz()">
+                <div class="btn-content">
+                    <span id="quiz-text">Generate Quiz</span>
+                    <div id="quiz-spinner" class="spinner"></div>
+                </div>
+            </button>
+            <div id="quiz-interface" class="quiz-container" style="display: none;">
+                <div id="quiz-questions"></div>
+                <button class="action-btn" id="submit-quiz-btn" onclick="submitQuiz()" style="margin-top: 2rem;">Check
+                    Answers</button>
+                <div id="quiz-final-score" class="score-banner" style="display: none;"></div>
+            </div>
+            <div id="quiz-result" class="result-card" style="display: none;"></div>
+        </section>
+
+        <!-- Summary Section -->
+        <section id="summary-section" class="content-section">
+            <div class="mode-toggle">
+                <button class="toggle-btn active" id="summary-text-mode" onclick="setMode('summary', 'text')">Text
+                    Content</button>
+                <button class="toggle-btn" id="summary-file-mode" onclick="setMode('summary', 'file')">Upload
+                    File</button>
+            </div>
+
+            <div class="input-group" id="summary-text-input">
+                <label for="summary-content" id="lbl-summary-text">Paste your study material here</label>
+                <textarea id="summary-content" rows="6" placeholder="Paste the text you want summarized..."></textarea>
+            </div>
+
+            <div class="input-group" id="summary-file-input" style="display: none;">
+                <label for="summary-file" id="lbl-summary-file">Upload PDF, DOCX, PPTX, or Image</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="summary-file" accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg">
+                    <p class="file-hint" id="hint-summary-file">Max 5MB • PDF, Word, PowerPoint, Images</p>
+                </div>
+            </div>
+
+            <button class="action-btn" id="summary-btn" onclick="handleSummary()">
+                <div class="btn-content">
+                    <span id="summary-text">Summarize Material</span>
+                    <div id="summary-spinner" class="spinner"></div>
+                </div>
+            </button>
+            <div id="summary-result" class="result-card" style="display: none;"></div>
+        </section>
+    </div>
+
+    <script>
+        const translations = {
+            'English': {
+                'tab-ask': 'Ask Anything',
+                'tab-quiz': 'Generate Quiz',
+                'tab-summary': 'Summarize Content',
+                'lbl-ask-q': 'What do you want to learn today?',
+                'question': 'e.g. Explain photosynthesis in simple terms...',
+                'ask-text': 'Ask Genie',
+                'quiz-text-mode': 'Topic',
+                'quiz-file-mode': 'Upload File',
+                'lbl-quiz-topic': 'Enter a Topic for the Quiz',
+                'quiz-topic': 'e.g. Quantum Physics, French Revolution...',
+                'lbl-quiz-file': 'Upload PDF, DOCX, PPTX, or Image',
+                'hint-quiz-file': 'Max 5MB • PDF, Word, PowerPoint, Images',
+                'quiz-text': 'Generate Quiz',
+                'submit-quiz-btn': 'Check Answers',
+                'summary-text-mode': 'Text Content',
+                'summary-file-mode': 'Upload File',
+                'lbl-summary-text': 'Paste your study material here',
+                'summary-content': 'Paste the text you want summarized...',
+                'lbl-summary-file': 'Upload PDF, DOCX, PPTX, or Image',
+                'hint-summary-file': 'Max 5MB • PDF, Word, PowerPoint, Images',
+                'summary-text': 'Summarize Material'
+            },
+            'Hindi': {
+                'tab-ask': 'कुछ भी पूछें',
+                'tab-quiz': 'क्वेश्चन बनाएं',
+                'tab-summary': 'सारांश निकालें',
+                'lbl-ask-q': 'आज आप क्या सीखना चाहते हैं?',
+                'question': 'जैसे: प्रकाश संश्लेषण को सरल शब्दों में समझाएं...',
+                'ask-text': 'जेनी से पूछें',
+                'quiz-text-mode': 'विषय',
+                'quiz-file-mode': 'फाइल अपलोड करें',
+                'lbl-quiz-topic': 'क्विज़ के लिए विषय दर्ज करें',
+                'quiz-topic': 'जैसे: क्वांटम फिजिक्स, फ्रांसीसी क्रांति...',
+                'lbl-quiz-file': 'पीडीएफ, वर्ड, पीपीटी या इमेज अपलोड करें',
+                'hint-quiz-file': 'अधिकतम 5MB • पीडीएफ, वर्ड, पीपीटी, इमेज',
+                'quiz-text': 'क्विज़ बनाएं',
+                'submit-quiz-btn': 'उत्तरों की जांच करें',
+                'summary-text-mode': 'टेक्स्ट कंटेंट',
+                'summary-file-mode': 'फाइल अपलोड करें',
+                'lbl-summary-text': 'अपनी अध्ययन सामग्री यहाँ पेस्ट करें',
+                'summary-content': 'वह टेक्स्ट पेस्ट करें जिसका सारांश आप चाहते हैं...',
+                'lbl-summary-file': 'पीडीएफ, वर्ड, पीपीटी या इमेज अपलोड करें',
+                'hint-summary-file': 'अधिकतम 5MB • पीडीएफ, वर्ड, पीपीटी, इमेज',
+                'summary-text': 'सारांश बनाएं'
+            },
+            'Kannada': {
+                'tab-ask': 'ಏನನ್ನಾದರೂ ಕೇಳಿ',
+                'tab-quiz': 'ಕ್ವಿಜ್ ರಚಿಸಿ',
+                'tab-summary': 'ಸಾರಾಂಶ ಪಡೆಯಿರಿ',
+                'lbl-ask-q': 'ಇಂದು ನೀವು ಏನನ್ನು ಕಲಿಯಲು ಬಯಸುತ್ತೀರಿ?',
+                'question': 'ಉದಾ: ದ್ಯುತಿಸಂಶ್ಲೇಷಣೆಯನ್ನು ಸರಳವಾಗಿ ವಿವರಿಸಿ...',
+                'ask-text': 'ಜೀನಿಯನ್ನ ಕೇಳಿ',
+                'quiz-text-mode': 'विषय',
+                'quiz-file-mode': 'ಅಪ್‌ಲೋಡ್ ಫೈಲ್',
+                'lbl-quiz-topic': 'ಕ್ವಿಜ್ ಗಾಗಿ ವಿಷಯವನ್ನು ನಮೂದಿಸಿ',
+                'quiz-topic': 'ಉದಾ: ಕ್ವಾಂಟಮ್ ಭೌತಶಾಸ್ತ್ರ, ಫ್ರೆಂಚ್ ಕ್ರಾಂತಿ...',
+                'lbl-quiz-file': 'PDF, Word, PPT ಅಥವಾ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
+                'hint-quiz-file': 'ಗರಿಷ್ಠ 5MB • PDF, Word, PowerPoint, ಚಿತ್ರಗಳು',
+                'quiz-text': 'ಕ್ವಿಜ್ ರಚಿಸಿ',
+                'submit-quiz-btn': 'ಉತ್ತರಗಳನ್ನ ಪರಿಶೀಲಿಸಿ',
+                'summary-text-mode': 'ಪಠ್ಯ ವಿಷಯ',
+                'summary-file-mode': 'ಅಪ್‌ಲೋಡ್ ಫೈಲ್',
+                'lbl-summary-text': 'ನಿಮ್ಮ ಕಲಿಕಾ ಸಾಮಗ್ರಿಯನ್ನು ಇಲ್ಲಿ ಪೇಸ್ಟ್ ಮಾಡಿ',
+                'summary-content': 'ನೀವು ಸಾರಾಂಶ ಪಡೆಯಲು ಬಯಸುವ ಪಠ್ಯವನ್ನು ಪೇಸ್ಟ್ ಮಾಡಿ...',
+                'lbl-summary-file': 'PDF, Word, PPT ಅಥವಾ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
+                'hint-summary-file': 'ಗರಿಷ್ಠ 5MB • PDF, Word, PowerPoint, ಚಿತ್ರಗಳು',
+                'summary-text': 'ಸಾರಾಂಶ ಪಡೆಯಿರಿ'
+            }
+        };
+
+        function updateUILanguage() {
+            const lang = document.getElementById('language').value;
+            const t = translations[lang];
+
+            for (let id in t) {
+                const el = document.getElementById(id);
+                if (!el) continue;
+
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    el.placeholder = t[id];
+                } else {
+                    el.innerText = t[id];
+                }
+            }
+        }
+
+        // Initialize UI language listener
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('language').addEventListener('change', updateUILanguage);
+        });
+
+        let currentModes = {
+            quiz: 'text',
+            summary: 'text'
+        };
+        let activeQuizData = [];
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`${tab}-section`).classList.add('active');
+        }
+
+        function setMode(section, mode) {
+            currentModes[section] = mode;
+            const textInput = document.getElementById(`${section}-text-input`);
+            const fileInput = document.getElementById(`${section}-file-input`);
+            const textBtn = document.getElementById(`${section}-text-mode`);
+            const fileBtn = document.getElementById(`${section}-file-mode`);
+
+            if (mode === 'text') {
+                textInput.style.display = 'block';
+                fileInput.style.display = 'none';
+                textBtn.classList.add('active');
+                fileBtn.classList.remove('active');
+            } else {
+                textInput.style.display = 'none';
+                fileInput.style.display = 'block';
+                textBtn.classList.remove('active');
+                fileBtn.classList.add('active');
+            }
+        }
+
+        function getLang() {
+            return document.getElementById('language').value;
+        }
+
+        async function handleAsk() {
+            const question = document.getElementById('question').value;
+            if (!question.trim()) return alert("Please enter a question.");
+            const lang = getLang();
+            await callAPI('/ask', { question, lang }, 'ask-btn', 'ask-spinner', 'ask-text', 'ask-result', true);
+        }
+
+        async function handleQuiz() {
+            const formData = new FormData();
+            formData.append('lang', getLang());
+            if (currentModes.quiz === 'text') {
+                const topic = document.getElementById('quiz-topic').value;
+                if (!topic.trim()) return alert("Please enter a topic.");
+                formData.append('topic', topic);
+            } else {
+                const file = document.getElementById('quiz-file').files[0];
+                if (!file) return alert("Please select a file.");
+                formData.append('file', file);
+            }
+
+            const result = await callAPI('/quiz', formData, 'quiz-btn', 'quiz-spinner', 'quiz-text', null, false);
+            if (result && result.quiz) {
+                renderQuiz(result.quiz);
+            }
+        }
+
+        function renderQuiz(data) {
+            activeQuizData = data;
+            const container = document.getElementById('quiz-questions');
+            const interface = document.getElementById('quiz-interface');
+            const scoreBanner = document.getElementById('quiz-final-score');
+
+            interface.style.display = 'block';
+            scoreBanner.style.display = 'none';
+            container.innerHTML = '';
+
+            const lang = getLang();
+            const qPrefix = lang === 'Hindi' ? 'प्रश्न' : (lang === 'Kannada' ? 'ಪ್ರಶ್ನೆ' : 'Question');
+
+            data.forEach((q, idx) => {
+                const qDiv = document.createElement('div');
+                qDiv.className = 'quiz-card';
+                qDiv.innerHTML = `
+                    <h3>${qPrefix} ${idx + 1}</h3>
+                    <p class="question-text">${q.question}</p>
+                    <div class="options-grid">
+                        ${Object.entries(q.options).map(([key, val]) => `
+                            <label class="option-item">
+                                <input type="radio" name="q${idx}" value="${key}">
+                                <span class="option-label"><strong>${key}:</strong> ${val}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div id="feedback-${idx}" class="explanation-box" style="none;"></div>
+                `;
+                container.appendChild(qDiv);
+            });
+
+            interface.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function submitQuiz() {
+            let score = 0;
+            const lang = getLang();
+            activeQuizData.forEach((q, idx) => {
+                const selected = document.querySelector(`input[name="q${idx}"]:checked`);
+                const feedback = document.getElementById(`feedback-${idx}`);
+                feedback.style.display = 'block';
+
+                if (selected && selected.value === q.correct) {
+                    score++;
+                    feedback.className = 'explanation-box correct';
+                    const correctMsg = lang === 'Hindi' ? 'सही!' : (lang === 'Kannada' ? 'ಸರಿ!' : 'Correct!');
+                    feedback.innerHTML = `✅ <strong>${correctMsg}</strong> ${q.explanation}`;
+                } else {
+                    feedback.className = 'explanation-box wrong';
+                    const wrongMsg = lang === 'Hindi' ? 'गलत।' : (lang === 'Kannada' ? 'ತಪ್ಪು.' : 'Wrong.');
+                    const correctAnswerLabel = lang === 'Hindi' ? 'सही उत्तर था' : (lang === 'Kannada' ? 'ಸರಿಯಾದ ಉತ್ತರ' : 'The correct answer was');
+                    feedback.innerHTML = `❌ <strong>${wrongMsg}</strong> ${correctAnswerLabel} <strong>${q.correct}</strong>.<br>${q.explanation}`;
+                }
+            });
+
+            const scoreBanner = document.getElementById('quiz-final-score');
+            scoreBanner.style.display = 'block';
+            let scoreMsg;
+            if (lang === 'Hindi') {
+                scoreMsg = `आपने ${activeQuizData.length} में से ${score} अंक प्राप्त किए!`;
+            } else if (lang === 'Kannada') {
+                scoreMsg = `ನೀವು ${activeQuizData.length} ರಲ್ಲಿ ${score} ಅಂಕಗಳನ್ನು ಪಡೆದಿದ್ದೀರಿ!`;
+            } else {
+                scoreMsg = `You scored ${score} out of ${activeQuizData.length}!`;
+            }
+            scoreBanner.innerHTML = scoreMsg;
+            scoreBanner.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function handleSummary() {
+            const formData = new FormData();
+            formData.append('lang', getLang());
+            if (currentModes.summary === 'text') {
+                const content = document.getElementById('summary-content').value;
+                if (!content.trim()) return alert("Please paste content.");
+                formData.append('content', content);
+            } else {
+                const file = document.getElementById('summary-file').files[0];
+                if (!file) return alert("Please select a file.");
+                formData.append('file', file);
+            }
+            await callAPI('/summary', formData, 'summary-btn', 'summary-spinner', 'summary-text', 'summary-result', false);
+        }
+
+        async function callAPI(endpoint, payload, btnId, spinnerId, textId, resultId, isJson) {
+            const btn = document.getElementById(btnId);
+            const spinner = document.getElementById(spinnerId);
+            const text = document.getElementById(textId);
+            const resultDiv = resultId ? document.getElementById(resultId) : null;
+
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            text.style.display = 'none';
+            if (resultDiv) resultDiv.style.display = 'none';
+
+            try {
+                const options = {
+                    method: 'POST',
+                    body: isJson ? JSON.stringify(payload) : payload
+                };
+                if (isJson) options.headers = { 'Content-Type': 'application/json' };
+
+                const response = await fetch(endpoint, options);
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (resultDiv) {
+                        resultDiv.textContent = result.answer || result.summary;
+                        resultDiv.style.display = 'block';
+                    }
+                    return result;
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                text.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+
+</html>
